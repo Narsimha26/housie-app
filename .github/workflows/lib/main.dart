@@ -1,1 +1,180 @@
+import 'dart:math';
+import 'package:flutter/material.dart';
 
+void main() {
+  runApp(const HousieApp());
+}
+
+class HousieApp extends StatelessWidget {
+  const HousieApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Housie Caller',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+      ),
+      home: const HousieHomePage(),
+    );
+  }
+}
+
+class HousieHomePage extends StatefulWidget {
+  const HousieHomePage({super.key});
+
+  @override
+  State<HousieHomePage> createState() => _HousieHomePageState();
+}
+
+class _HousieHomePageState extends State<HousieHomePage> {
+  final List<int> _allNumbers = List.generate(90, (i) => i + 1);
+  final List<int> _calledNumbers = [];
+  int? _currentNumber;
+
+  void _pickNextNumber() {
+    List<int> remaining = _allNumbers.where((n) => !_calledNumbers.contains(n)).toList();
+    if (remaining.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('All 90 numbers have been called!')),
+      );
+      return;
+    }
+
+    final random = Random();
+    int next = remaining[random.nextInt(remaining.length)];
+
+    setState(() {
+      _currentNumber = next;
+      _calledNumbers.add(next);
+    });
+  }
+
+  void _resetGame() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reset Game?'),
+        content: const Text('Are you sure you want to clear the board?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _calledNumbers.clear();
+                _currentNumber = null;
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Housie / Tambola Caller'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Reset Board',
+            onPressed: _resetGame,
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Current Number & Controls Section
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            decoration: BoxDecoration(
+              color: Colors.deepPurple.shade50,
+              border: Border(bottom: BorderSide(color: Colors.deepPurple.shade100)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Current Number', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                    Text(
+                      _currentNumber != null ? '$_currentNumber' : '--',
+                      style: const TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.deepPurple,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  'Called: ${_calledNumbers.length} / 90',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _pickNextNumber,
+                  icon: const Icon(Icons.play_arrow),
+                  label: const Text('NEXT'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // 1-90 Grid Board
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: GridView.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 10,
+                  mainAxisSpacing: 4,
+                  crossAxisSpacing: 4,
+                ),
+                itemCount: 90,
+                itemBuilder: (context, index) {
+                  int num = index + 1;
+                  bool isCalled = _calledNumbers.contains(num);
+                  bool isCurrent = _currentNumber == num;
+
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: isCurrent
+                          ? Colors.amber
+                          : isCalled
+                              ? Colors.deepPurple
+                              : Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '$num',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: (isCalled || isCurrent) ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
